@@ -6,7 +6,9 @@ BUILD := build
 KERNEL := $(BUILD)/minimum-kernel.elf
 RUNTIME := $(BUILD)/libminemu_kernel.a
 
-CORE_OBJECT := $(BUILD)/core/main.o
+CORE_OBJECTS := \
+	$(BUILD)/core/main.o \
+	$(BUILD)/core/uart.o
 RUNTIME_OBJECTS := \
 	$(BUILD)/runtime/block.o \
 	$(BUILD)/runtime/exception.o \
@@ -15,7 +17,7 @@ RUNTIME_OBJECTS := \
 	$(BUILD)/startup/boot.o \
 	$(BUILD)/startup/vectors.o
 
-OBJECTS := $(CORE_OBJECT) $(RUNTIME_OBJECTS)
+OBJECTS := $(CORE_OBJECTS) $(RUNTIME_OBJECTS)
 DEPENDENCIES := $(OBJECTS:.o=.d)
 
 EXAMPLES := \
@@ -67,9 +69,9 @@ $(RUNTIME): $(RUNTIME_OBJECTS)
 	@mkdir -p $(dir $@)
 	$(AR) rcs $@ $^
 
-$(KERNEL): $(CORE_OBJECT) $(RUNTIME) linker/kernel.ld
+$(KERNEL): $(CORE_OBJECTS) $(RUNTIME) linker/kernel.ld
 	@mkdir -p $(dir $@)
-	$(CC) $(LDFLAGS) $(CORE_OBJECT) $(RUNTIME) $(LIBGCC) -o $@
+	$(CC) $(LDFLAGS) $(CORE_OBJECTS) $(RUNTIME) $(LIBGCC) -o $@
 
 $(BUILD)/core/%.o: src/core/%.c
 	@mkdir -p $(dir $@)
