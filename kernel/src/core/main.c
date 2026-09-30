@@ -2,6 +2,8 @@
 #include "minemu/trap.h"
 #include "minemu/trace.h"
 #include "minemu/uart.h"
+#include "minemu/irq.h"
+#include "minemu/shell.h"
 
 void minemu_kernel_main(const struct minemu_boot_info *boot_info) {
     if ((uintptr_t)boot_info != MINEMU_BOOT_INFO_VADDR ||
@@ -17,4 +19,6 @@ void minemu_kernel_main(const struct minemu_boot_info *boot_info) {
     }
     minemu_trace_event(1);
     uart_putstring("hello world\n");
+    uart_init();
+    shell_run();
 }

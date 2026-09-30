@@ -8,7 +8,11 @@ RUNTIME := $(BUILD)/libminemu_kernel.a
 
 CORE_OBJECTS := \
 	$(BUILD)/core/main.o \
-	$(BUILD)/core/uart.o
+	$(BUILD)/core/irq_entry.o \
+	$(BUILD)/core/irq.o \
+	$(BUILD)/drivers/uart.o \
+	$(BUILD)/shell/shell.o \
+	$(BUILD)/helpers/string.o
 RUNTIME_OBJECTS := \
 	$(BUILD)/runtime/block.o \
 	$(BUILD)/runtime/exception.o \
@@ -77,6 +81,10 @@ $(BUILD)/core/%.o: src/core/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
+$(BUILD)/core/%.o: src/core/%.S
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(ASFLAGS) -c $< -o $@
+
 $(BUILD)/runtime/%.o: src/runtime/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
@@ -84,6 +92,18 @@ $(BUILD)/runtime/%.o: src/runtime/%.c
 $(BUILD)/startup/%.o: src/startup/%.S
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(ASFLAGS) -c $< -o $@
+
+$(BUILD)/drivers/%.o: src/drivers/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+$(BUILD)/shell/%.o: src/shell/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+$(BUILD)/helpers/%.o: src/helpers/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -rf $(BUILD)

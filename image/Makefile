@@ -5,9 +5,14 @@ KERNEL := ../kernel/build/minimum-kernel.elf
 USER_PROGRAM := ../user/prog/minimum-user/build/minimum-user.elf
 
 KERNEL_INPUTS := $(wildcard ../kernel/src/core/*.c) \
+	$(wildcard ../kernel/src/drivers/*.c) \
+	$(wildcard ../kernel/src/shell/*.c) \
+	$(wildcard ../kernel/src/helpers/*.c) \
 	$(wildcard ../kernel/src/runtime/*.c) \
 	$(wildcard ../kernel/src/startup/*.S) \
+	$(wildcard ../kernel/include/*.h) \
 	$(wildcard ../kernel/include/minemu/*.h) \
+	$(wildcard ../kernel/src/core/*.S) \
 	../kernel/linker/kernel.ld \
 	../kernel/Makefile
 
