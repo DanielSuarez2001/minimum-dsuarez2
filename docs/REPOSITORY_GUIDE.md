@@ -35,10 +35,14 @@ When the emulator powers on:
 2. **Kernel bootstrap** (`kernel/src/startup/boot.S`) sets up exception stacks,
    builds page tables, turns on the MMU, and moves the kernel to its
    "higher-half" virtual address (`0xc0000000` and up).
-3. **`minemu_kernel_main`** (`kernel/src/core/main.c`) runs. **This is where
-   your kernel work begins.**
+3. **`minemu_kernel_main`** (`kernel/src/core/main.c`) runs. It checks the
+   boot info, prints `hello world`, turns on UART input interrupts, and starts
+   the `msh` shell, which runs forever.
 4. Hardware interrupts and exceptions enter through the vector table
    (`kernel/src/startup/vectors.S`) and are handed to C "dispatch" functions.
+   When you type a key, the path is: UART0 → interrupt controller → IRQ
+   trampoline (`core/irq_entry.S`) → dispatcher (`core/irq.c`) → UART handler
+   (`drivers/uart.c`), which stores the byte for the shell to read.
 
 ---
 
@@ -96,15 +100,45 @@ firmware**. Your work uses the checked-in `bootloader.bin` as-is.
 
 This is where assignment work happens.
 
-### `kernel/src/core/`: your code
+### Your code (Homework 1)
+
+Everything in this section was written for HW1. It lives in four folders
+under `kernel/src/`, plus three headers.
 
 | File | Purpose |
 |---|---|
-| `main.c` | `minemu_kernel_main(boot_info)`, the kernel's C entry point. The starter version validates the boot-info record, emits a trace event, and halts. Assignment 1 replaces the halt with console output, interrupt setup, and a shell. |
+| `core/main.c` | `minemu_kernel_main(boot_info)`, the kernel's C entry point. It validates the boot-info record (template code; leave it alone), prints `hello world\n`, calls `uart_init()`, and then runs `shell_run()` forever. |
+| `core/irq_entry.S` | `minemu_irq_trampoline`, the code the CPU jumps to on every hardware interrupt. It saves the interrupted registers into a trap frame, reads the interrupt controller's CLAIM register to learn which device fired, calls the dispatcher, then restores the registers and returns. It's copied unchanged from `kernel/examples/irq-context-switch/irq.S`. |
+| `core/irq.c` | `minemu_irq_dispatch`, which picks the handler for the device that fired, using a table (`irq_handlers[]`, currently just UART0). It then writes the device number to the controller's EOI register ("I'm done"). If no device was claimed, it returns without an EOI. |
+| `drivers/uart.c` | The UART0 driver. `uart_putchar`/`uart_putstring` send text by waiting for the transmitter to be ready. `uart_rx_irq_handler` runs on every receive interrupt and moves all waiting bytes into a 256-byte ring buffer. `uart_getchar` waits for a byte from that buffer, switching interrupts off while it touches the buffer. `uart_init` turns on receive interrupts. |
+| `shell/shell.c` | The `msh` shell (see [Shell behavior](#shell-behavior)). `shell_run` prints `msh> `, collects a line, and runs it. `shell_run_line` parses and executes one line. |
+| `helpers/string.c` | Small string helpers, since there is no C library: `strlen`, `str_eq`, `str_start_trim` (skip leading spaces), `str_split_on_space`, `str_is_first_word`. |
 
-You may add more `.c` or `.S` files under `kernel/src/`, organized however you
-like. Every new object file must be added to `kernel/Makefile` (see
-[Adding code](#adding-code) below).
+| Header | Declares |
+|---|---|
+| `include/minemu/uart.h` | The UART driver functions above |
+| `include/minemu/shell.h` | `shell_run`, `shell_run_line` |
+| `include/string.h` | The string helpers above (included as `"string.h"`) |
+
+#### Shell behavior
+
+- Prints `msh> ` whenever it's ready for a command. What you type isn't echoed
+  back, because the emulator's console already shows your keystrokes.
+- A line ends at `\n`. Lines can be up to 20 characters.
+- `0x08` and `0x7f` are backspace. Backspace on an empty line does nothing.
+- If you type past 20 characters, the extra characters are discarded. If you
+  backspace until you're back within 20, the line is usable again. If the line
+  is still too long when you press Enter, the shell prints
+  `Error: Input line too long, max is 20 characters` and runs nothing.
+- Leading spaces are ignored. An empty or all-space line just shows the prompt
+  again.
+- `echo TEXT` prints `TEXT` (after skipping the spaces right after `echo`) and
+  a newline. Plain `echo` prints an empty line.
+- Any other command prints `command not found: COMMAND`, where COMMAND is the
+  first word.
+
+You can add more `.c` or `.S` files under `kernel/src/`. Every new object file
+must be added to `kernel/Makefile` (see [Adding code](#adding-code) below).
 
 ### `kernel/src/startup/`: boot and exception entry (supplied)
 
@@ -159,14 +193,14 @@ that links against the same runtime library. Build one with
 | Example | What it demonstrates |
 |---|---|
 | `mmio-basics/` | Talking to devices directly: printing to UART0, seeding and reading the RNG, starting the SysTick timer, writing a trace event. |
-| `irq-context-switch/` | A full IRQ path. `irq.S` provides `minemu_irq_trampoline`, which saves a trap frame, reads the interrupt controller's CLAIM register to learn which device fired, and calls `minemu_irq_dispatch`. `main.c` acknowledges the device, signals end-of-interrupt, and switches between two tasks by returning a different trap frame. **HW1 starts from this example.** |
+| `irq-context-switch/` | A full IRQ path. `irq.S` provides `minemu_irq_trampoline`, which saves a trap frame, reads the interrupt controller's CLAIM register to learn which device fired, and calls `minemu_irq_dispatch`. `main.c` acknowledges the device, signals end-of-interrupt, and switches between two tasks by returning a different trap frame. Your `core/irq_entry.S` is a copy of this `irq.S`. |
 | `svc-context-switch/` | The same idea for system calls (`svc #0`): `svc.S` trampoline + `minemu_svc_dispatch` switching tasks. For later assignments. |
 
 ### Kernel build files
 
 | File | Purpose |
 |---|---|
-| `kernel/Makefile` | Builds `build/minimum-kernel.elf` from `src/core/main.o` + `build/libminemu_kernel.a` + libgcc. Also lists the examples (`make -C kernel examples`). All warnings are errors (`-Werror`). |
+| `kernel/Makefile` | Builds `build/minimum-kernel.elf` from your objects in `CORE_OBJECTS` (`core/main.o`, `core/irq_entry.o`, `core/irq.o`, `drivers/uart.o`, `shell/shell.o`, `helpers/string.o`) + `build/libminemu_kernel.a` + libgcc. It has compile rules for `.c` files in `core/`, `drivers/`, `shell/`, `helpers/` and `runtime/`, and for `.S` files in `core/` and `startup/`. Also lists the examples (`make -C kernel examples`). All warnings are errors (`-Werror`). |
 | `kernel/common.mk` | Shared build rules used by each example's two-line Makefile: compile every `.c`/`.S` in the folder and link it with the runtime library. |
 
 ---
@@ -193,7 +227,7 @@ kernel. Not part of Assignment 1.
 | File | Purpose |
 |---|---|
 | `minimum.toml` | Manifest that tells `minemu image` which kernel ELF to use and which user programs (`[[modules]]`) to pack in. Edit it to add or remove user programs. |
-| `Makefile` | Runs `minemu image minimum.toml --output build/minimum.img`. It rebuilds the kernel and user program first if their sources changed. |
+| `Makefile` | Runs `minemu image minimum.toml --output build/minimum.img`. It rebuilds the kernel and user program first if their sources changed. `KERNEL_INPUTS` lists the kernel folders it watches: `core`, `drivers`, `shell`, `helpers`, `runtime`, `startup`, `include` and `include/minemu`. |
 
 The output `image/build/minimum.img` is what you boot and test.
 
@@ -212,6 +246,10 @@ Each test is a `minemu test` manifest. It boots the packaged image, optionally f
 input into a UART at a given time, and checks the output. The tests treat the system as a
 black box, so they never call your functions directly. Run with `just test-all hw1`
 or `just test hw1 <name>`. Later homework gets sibling folders (`hw2/`, …).
+
+The current kernel passes all three HW1 tests. They only check that certain text
+appears, so shell details such as backspace, the 20-character limit, overlong
+lines and unknown commands need extra manifests of your own to test.
 
 ---
 
@@ -239,13 +277,21 @@ or `just test hw1 <name>`. Later homework gets sibling folders (`hw2/`, …).
 ## Adding code
 
 - **New kernel source file:** put it under `kernel/src/` and add its `.o` to
-  `kernel/Makefile`. Link it with the kernel (next to `main.o`), not into the
-  runtime library, which is shared with the examples. Only `src/core/`,
-  `src/runtime/`, and `src/startup/` have compile rules, so a new subfolder
-  needs its own rule. Also add it to `KERNEL_INPUTS` in `image/Makefile`, or
-  `make image` may not notice your changes.
-- **Replacing a weak default** (e.g. the IRQ trampoline): define the function
-  with the exact same name in your code. The linker prefers yours.
+  `CORE_OBJECTS` in `kernel/Makefile`. Don't add it to the runtime library,
+  which is shared with the examples. The existing folders (`core/`,
+  `drivers/`, `shell/`, `helpers/`) already have compile rules; a new folder
+  needs its own rule, plus a wildcard in `KERNEL_INPUTS` in `image/Makefile`.
+  Without that wildcard, running `make` inside `image/` directly won't notice
+  your changes. Running `make image` from the repo root is always fine.
+- **New interrupt source** (e.g. SysTick or UART1): enable it at the device
+  and in `MINEMU_INTERRUPT->enable`, and add its handler to `irq_handlers[]`
+  in `core/irq.c`. The handler must clear the device's request (read the data
+  or write its ACK) before the dispatcher writes EOI.
+- **New shell command:** add a branch next to the `echo` check in
+  `shell_run_line` (`shell/shell.c`).
+- **Replacing a weak default** (as `core/irq_entry.S` and `core/irq.c` do for
+  the IRQ trampoline and dispatcher): define the function with the exact same
+  name in your code. The linker prefers yours.
 - **New kernel example:** create `kernel/examples/<name>/` with a Makefile
   containing `PROGRAM := <name>` and `include ../../common.mk`, then add it to
   `EXAMPLES` in `kernel/Makefile`.
