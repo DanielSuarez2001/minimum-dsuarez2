@@ -24,11 +24,6 @@ RUNTIME_OBJECTS := \
 OBJECTS := $(CORE_OBJECTS) $(RUNTIME_OBJECTS)
 DEPENDENCIES := $(OBJECTS:.o=.d)
 
-EXAMPLES := \
-	mmio-basics \
-	svc-context-switch \
-	irq-context-switch
-
 ARCH_FLAGS := -mcpu=cortex-a9 -marm -mfloat-abi=soft
 CPPFLAGS := -Iinclude
 CFLAGS := $(ARCH_FLAGS) \
@@ -58,16 +53,11 @@ LDFLAGS := $(ARCH_FLAGS) \
 
 LIBGCC := $(shell $(CC) $(ARCH_FLAGS) -print-libgcc-file-name)
 
-.PHONY: all runtime examples clean $(EXAMPLES)
+.PHONY: all runtime clean
 
 all: $(KERNEL)
 
 runtime: $(RUNTIME)
-
-examples: $(EXAMPLES)
-
-$(EXAMPLES):
-	$(MAKE) -C examples/$@ all
 
 $(RUNTIME): $(RUNTIME_OBJECTS)
 	@mkdir -p $(dir $@)
@@ -107,6 +97,5 @@ $(BUILD)/helpers/%.o: src/helpers/%.c
 
 clean:
 	rm -rf $(BUILD)
-	@for example in $(EXAMPLES); do $(MAKE) -C examples/$$example clean; done
 
 -include $(DEPENDENCIES)
