@@ -15,8 +15,6 @@ CORE_OBJECTS := \
 	$(BUILD)/core/user_load/user_loader.o \
 	$(BUILD)/core/user_load/user.o \
 	$(BUILD)/drivers/uart.o \
-	$(BUILD)/shell/shell.o \
-	$(BUILD)/helpers/string.o \
 
 RUNTIME_OBJECTS := \
 	$(BUILD)/runtime/block.o \
@@ -94,14 +92,6 @@ $(BUILD)/startup/%.o: src/startup/%.S
 	$(CC) $(CPPFLAGS) $(ASFLAGS) -c $< -o $@
 
 $(BUILD)/drivers/%.o: src/drivers/%.c
-	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
-
-$(BUILD)/shell/%.o: src/shell/%.c
-	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
-
-$(BUILD)/helpers/%.o: src/helpers/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 

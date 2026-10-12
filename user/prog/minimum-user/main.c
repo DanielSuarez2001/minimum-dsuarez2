@@ -1,9 +1,9 @@
 #include <stdint.h>
 #include "minemu/user_abi.h"
+#include "shell.h"
 
 void minemu_user_main(void) {
-    static const char message[] = "hello world\n";
-    (void)ioctl(MINEMU_FD_UART_OUT, MINEMU_IOCTL_UART_WRITE, (void *)message, sizeof(message) - 1U);
+    shell_run();
     for (;;) {
         __asm__ volatile("nop");
     }

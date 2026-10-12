@@ -64,7 +64,6 @@ struct minemu_trap_frame *minemu_svc_dispatch(struct minemu_trap_frame *frame) {
     }
 
     if (frame->r[7] == MINEMU_SYSCALL_IOCTL) {
-
         uint32_t fd = frame->r[0];
         uint32_t op = frame->r[1];
         uint32_t arg0 = frame->r[2];

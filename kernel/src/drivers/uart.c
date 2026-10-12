@@ -65,6 +65,7 @@ char uart0_getchar(void) {
 }
 // Function for draining from UART0 RX buffer into a provided destination buffer
 size_t uart0_var_getchars(char *dst, size_t max_len) {
+    uart0_rx_irq_handler();
     size_t count = 0;
     while (count < max_len && uart0_rx_head != uart0_rx_tail) {
         // Wait for a character to be available in the buffer
@@ -128,6 +129,7 @@ char uart1_getchar(void) {
 }
 // Function for draining from UART1 RX buffer into a provided destination buffer
 size_t uart1_var_getchars(char *dst, size_t max_len) {
+    uart1_rx_irq_handler();
     size_t count = 0;
     while (count < max_len && uart1_rx_head != uart1_rx_tail) {
         // Wait for a character to be available in the buffer

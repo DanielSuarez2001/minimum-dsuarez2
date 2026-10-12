@@ -3,7 +3,6 @@
 #include "minemu/trace.h"
 #include "minemu/uart.h"
 #include "minemu/irq.h"
-#include "minemu/shell.h"
 #include "minemu/syscall.h"
 #include "minemu/user_loader.h"
 
