@@ -5,7 +5,8 @@
 
 typedef void (*irq_handler_t)(void);
 static irq_handler_t irq_handlers[] = {
-    [MINEMU_IRQ_UART0] = uart_rx_irq_handler
+    [MINEMU_IRQ_UART0] = uart0_rx_irq_handler,
+    [MINEMU_IRQ_UART1] = uart1_rx_irq_handler
 };
 
 // This function gets called in irq.s when an interrupt occurs and dispatches the correct interrupt handler

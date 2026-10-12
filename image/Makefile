@@ -13,6 +13,8 @@ KERNEL_INPUTS := $(wildcard ../kernel/src/core/*.c) \
 	$(wildcard ../kernel/include/*.h) \
 	$(wildcard ../kernel/include/minemu/*.h) \
 	$(wildcard ../kernel/src/core/*.S) \
+	$(wildcard ../kernel/src/core/user_load/*.c) \
+	$(wildcard ../kernel/src/core/user_load/*.S) \
 	../kernel/linker/kernel.ld \
 	../kernel/Makefile
 

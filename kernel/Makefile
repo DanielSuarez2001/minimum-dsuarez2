@@ -10,9 +10,14 @@ CORE_OBJECTS := \
 	$(BUILD)/core/main.o \
 	$(BUILD)/core/irq_entry.o \
 	$(BUILD)/core/irq.o \
+	$(BUILD)/core/svc.o \
+	$(BUILD)/core/syscall.o \
+	$(BUILD)/core/user_load/user_loader.o \
+	$(BUILD)/core/user_load/user.o \
 	$(BUILD)/drivers/uart.o \
 	$(BUILD)/shell/shell.o \
-	$(BUILD)/helpers/string.o
+	$(BUILD)/helpers/string.o \
+
 RUNTIME_OBJECTS := \
 	$(BUILD)/runtime/block.o \
 	$(BUILD)/runtime/exception.o \
@@ -74,6 +79,11 @@ $(BUILD)/core/%.o: src/core/%.c
 $(BUILD)/core/%.o: src/core/%.S
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(ASFLAGS) -c $< -o $@
+
+$(BUILD)/core/user_load/%.o: src/core/user_load/%.S
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(ASFLAGS) -c $< -o $@
+
 
 $(BUILD)/runtime/%.o: src/runtime/%.c
 	@mkdir -p $(dir $@)

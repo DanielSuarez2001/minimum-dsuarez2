@@ -12,12 +12,12 @@ static uint32_t shell_overflow_count = 0; // Keeps track of overflow amount
 void shell_run(void) {
    
     for (;;) {
-        uart_putstring("msh> ");
+        uart0_putstring("msh> ");
         while (1) {
-            char c = uart_getchar();
+            char c = uart0_getchar();
             if (c == '\n') { //Handle newline character
                 if (shell_is_overflowed) {
-                    uart_putstring("Error: Input line too long, max is 20 characters\n");
+                    uart0_putstring("Error: Input line too long, max is 20 characters\n");
                     shell_line_head = 0; // Reset the line buffer
                     shell_is_overflowed = false; // Reset overflow flag
                     shell_overflow_count = 0; // Reset overflow count
@@ -71,13 +71,13 @@ void shell_run_line(char *line) {
     // Check for known commands
     if (str_eq(line, "echo")) {
         if (suffix) {
-            uart_putstring(suffix);
+            uart0_putstring(suffix);
         }
     }
     else {
-        uart_putstring("command not found: ");
-        uart_putstring(line);
+        uart0_putstring("command not found: ");
+        uart0_putstring(line);
     }
-    uart_putstring("\n");
+    uart0_putstring("\n");
 }
 
